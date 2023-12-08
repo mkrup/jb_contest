@@ -30,6 +30,27 @@ fun main() {
         return -1
     }
 
+    fun findLCM(a: Long, b: Long): Long {
+        val larger = if (a > b) a else b
+        val maxLcm = a * b
+        var lcm = larger
+        while (lcm <= maxLcm) {
+            if (lcm % a == 0L && lcm % b == 0L) {
+                return lcm
+            }
+            lcm += larger
+        }
+        return maxLcm
+    }
+
+    fun findLCM(numbers: List<Long>): Long {
+        var result = numbers[0]
+        for (i in 1 until numbers.size) {
+            result = findLCM(result, numbers[i])
+        }
+        return result
+    }
+
     fun part2(input: List<String>): Long {
         var instrI = 0
         val instructions = generateSequence {
@@ -47,21 +68,59 @@ fun main() {
 
         var res = 0L
         val curNodes = nodes.filterKeys { it.endsWith('A') }.values.toMutableList()
-        instructions.forEach { step ->
-            if (curNodes.all { it.name.endsWith('Z') }) return res
-            curNodes.forEachIndexed { index, node ->
-                val curNode = when (step) {
-                    'L' -> nodes.getValue(node.left)
-                    'R' -> nodes.getValue(node.right)
-                    else -> error("")
-                }
-                curNodes[index] = curNode
-            }
-            res++
-            println("res: $res")
-        }
 
-        return -1
+        val cycles1 = nodes
+            .map { entry ->
+                var curNode: Node = entry.value
+                input[0].forEach { step ->
+                    curNode = when (step) {
+                        'L' -> nodes.getValue(curNode.left)
+                        'R' -> nodes.getValue(curNode.right)
+                        else -> error("")
+                    }
+                }
+                entry.key to curNode
+            }
+            .toMap()
+
+        val cycles = nodes
+            .map { entry ->
+                var curNode: Node = entry.value
+                var i = 0L
+                val map = mutableSetOf<String>()
+                do {
+                    curNode = cycles1.getValue(curNode.name)
+                    i++
+                } while (!curNode.name.endsWith('Z') && curNode.name != entry.key && map.add(curNode.name))
+                entry.key to (curNode to i)
+            }
+            .toMap()
+
+        val lcm = findLCM(curNodes.map { node ->
+            cycles.getValue(node.name).second
+        })
+//            curNodes.forEachIndexed { index, node ->
+//                curNodes[index] = cycles.getValue(curNodes[index].name)
+//            }
+        res += input[0].length * lcm
+            println("res: $res")
+//        require(curNodes.all { it.name.endsWith('Z') })
+
+//        instructions.forEach { step ->
+//            if (curNodes.all { it.name.endsWith('Z') }) return res
+//            curNodes.forEachIndexed { index, node ->
+//                val curNode = when (step) {
+//                    'L' -> nodes.getValue(node.left)
+//                    'R' -> nodes.getValue(node.right)
+//                    else -> error("")
+//                }
+//                curNodes[index] = curNode
+//            }
+//            res++
+//            println("res: $res")
+//        }
+
+        return res
     }
 
     // test if implementation meets criteria from the description, like:
